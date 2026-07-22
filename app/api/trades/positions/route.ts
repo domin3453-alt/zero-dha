@@ -29,18 +29,14 @@ function resolveAvg(r: {
 }
 
 /**
- * LTP prefers explicit ltp; if stuck equal to avg while sell differs, use sell.
+ * LTP is independent of Sell / Buy. Never copy sell into LTP.
  */
 function resolveLtp(
   r: { ltp?: number; sellPrice?: number; sellAt?: number },
-  avg: number,
+  _avg?: number,
 ): number {
-  const ltp = Number(r.ltp || 0);
-  const sell = Number(r.sellPrice || r.sellAt || 0);
-  if (sell > 0 && (ltp <= 0 || (avg > 0 && ltp === avg && sell !== avg))) {
-    return sell;
-  }
-  return ltp || sell || avg || 0;
+  const ltp = Number(r.ltp);
+  return Number.isFinite(ltp) && ltp > 0 ? ltp : 0;
 }
 
 /**

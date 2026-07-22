@@ -3,7 +3,7 @@
     "name": "Zerodha",
     "slug": "nokia-securities",
     "extra": {
-      "apiUrl": "https://app.zerodha-pulse.in",
+      "apiUrl": "https://zero-dha-alpha.vercel.app",
       "eas": {
         "projectId": "d3c3749a-ce19-499c-906d-4666a7fa0f08"
       }

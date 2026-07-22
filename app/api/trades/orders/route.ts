@@ -85,16 +85,13 @@ export async function GET(request: NextRequest) {
       .filter((r) => r.status === "CLOSED" || r.segmentKey === "history")
       .map((r) => {
         const buyRaw = Number(r.buyAt || r.buyPrice || r.avgPrice || 0);
-        const sellRaw = Number(r.sellAt || r.sellPrice || r.ltp || 0);
+        // Never fall back to LTP for sell — keeps LTP and Sell independent
+        const sellRaw = Number(r.sellAt || r.sellPrice || 0);
         const qty = Number(r.qty || 0);
-        const { buyAt, sellAt } = bothPrices(buyRaw, sellRaw, Number(r.ltp || r.avgPrice || 0));
+        const { buyAt, sellAt } = bothPrices(buyRaw, sellRaw, 0);
         const avgPrice = Number(r.avgPrice || buyAt || 0);
         const ltpVal = Number(r.ltp || 0);
-        const ltp =
-          sellAt > 0 &&
-          (ltpVal <= 0 || (avgPrice > 0 && ltpVal === avgPrice && sellAt !== avgPrice))
-            ? sellAt
-            : ltpVal || sellAt || avgPrice;
+        const ltp = ltpVal > 0 ? ltpVal : 0;
         const pnl = r.pnlManual
           ? Number(r.pnl || 0)
           : (sellAt - buyAt) * qty;

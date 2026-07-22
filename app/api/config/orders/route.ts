@@ -36,14 +36,11 @@ function resolveStrike(o: OrderRowEffective): number | undefined {
 
 function resolveLtp(
   o: OrderRowEffective,
-  avg: number,
+  _avg?: number,
 ): number {
-  const ltp = Number(o.ltp || 0);
-  const sell = Number(o.sellPrice || o.sellAt || 0);
-  if (sell > 0 && (ltp <= 0 || (avg > 0 && ltp === avg && sell !== avg))) {
-    return sell;
-  }
-  return ltp || sell || avg || 0;
+  const ltp = Number(o.ltp);
+  // LTP stays independent — never copy Sell into LTP
+  return Number.isFinite(ltp) && ltp > 0 ? ltp : 0;
 }
 
 export async function GET(request: Request) {
@@ -60,11 +57,11 @@ export async function GET(request: Request) {
     const orders = rawOrders.map((o: OrderRowEffective) => {
       const avgPrice = Number(o.avgPrice || o.buyPrice || o.buyAt || 0);
       let entryPrice = Number(o.buyAt || o.buyPrice || avgPrice || 0);
-      let exitPrice = Number(o.sellAt || o.sellPrice || o.ltp || 0);
-      // Always provide both for history / display chips
+      // Sell chips only — do not fall back to LTP
+      let exitPrice = Number(o.sellAt || o.sellPrice || 0);
       if (!(entryPrice > 0) && exitPrice > 0) entryPrice = exitPrice;
       if (!(exitPrice > 0) && entryPrice > 0) exitPrice = entryPrice;
-      const ltp = resolveLtp(o, avgPrice) || exitPrice || entryPrice;
+      const ltp = resolveLtp(o, avgPrice);
       return {
         ...o,
         avgPrice: avgPrice || entryPrice,
