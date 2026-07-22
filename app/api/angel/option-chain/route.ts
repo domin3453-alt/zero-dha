@@ -71,6 +71,11 @@ export async function GET(request: NextRequest) {
     // Circuit open with no cache — return skeleton chain (strikes from scrip master, LTP=0)
     // so the app renders the table instead of an error screen.
     if (circuitOpen()) {
+      // Prefer any previously cached quotes over a zeroed skeleton flash.
+      if (cached?.data) {
+        console.log("[angel/option-chain] circuit open — serving stale cache", cacheKey);
+        return NextResponse.json(cached.data);
+      }
       const strikeSet = new Set([...allCalls.map((c) => c.strike), ...allPuts.map((p) => p.strike)]);
       const allStrikes = [...strikeSet].sort((a, b) => a - b).slice(0, 20);
       const expiries = await getExpiries(symbol, exchange);
@@ -226,7 +231,74 @@ export async function GET(request: NextRequest) {
     // Get all available expiries for the dropdown
     const expiries = await getExpiries(symbol, exchange);
 
-    const responseData = { symbol, expiry, exchange, spotPrice, atmStrike, expiries, chain };
+    // If quotes came back empty/zero (rate-limit / partial failure), keep prior
+    // LTPs so clients don't flash 0 between refreshes.
+    const prev = cached?.data as
+      | {
+          spotPrice?: number;
+          atmStrike?: number;
+          chain?: Array<{
+            strike: number;
+            CE?: Record<string, number>;
+            PE?: Record<string, number>;
+          }>;
+        }
+      | undefined;
+    const mergedChain = chain.map((row) => {
+      const prevRow = prev?.chain?.find((r) => r.strike === row.strike);
+      const keepSide = (
+        next: Record<string, any> | undefined,
+        old: Record<string, any> | undefined,
+      ) => {
+        if (!next) return next;
+        const nextLtp = Number(next.ltp ?? 0);
+        const oldLtp = Number(old?.ltp ?? 0);
+        if (nextLtp > 0 || !(oldLtp > 0)) return next;
+        return {
+          ...next,
+          ltp: oldLtp,
+          change: Number(old?.change ?? next.change ?? 0),
+          changePct: Number(old?.changePct ?? next.changePct ?? 0),
+          oi: Number(next.oi || old?.oi || 0),
+          oiChange: Number(next.oiChange || old?.oiChange || 0),
+          volume: Number(next.volume || old?.volume || 0),
+          bidPrice: Number(next.bidPrice || old?.bidPrice || 0),
+          askPrice: Number(next.askPrice || old?.askPrice || 0),
+        };
+      };
+      return {
+        ...row,
+        CE: keepSide(row.CE, prevRow?.CE),
+        PE: keepSide(row.PE, prevRow?.PE),
+      };
+    });
+
+    const liveQuoteCount = mergedChain.reduce((n, row) => {
+      const ce = Number(row.CE?.ltp ?? 0) > 0 ? 1 : 0;
+      const pe = Number(row.PE?.ltp ?? 0) > 0 ? 1 : 0;
+      return n + ce + pe;
+    }, 0);
+    const prevQuoteCount = (prev?.chain || []).reduce((n, row) => {
+      const ce = Number(row.CE?.ltp ?? 0) > 0 ? 1 : 0;
+      const pe = Number(row.PE?.ltp ?? 0) > 0 ? 1 : 0;
+      return n + ce + pe;
+    }, 0);
+
+    // Don't replace a healthy cache with an all-zero refresh.
+    if (liveQuoteCount === 0 && prevQuoteCount > 0 && prev) {
+      console.log("[angel/option-chain] zero quotes — keeping stale cache", cacheKey);
+      return NextResponse.json(prev);
+    }
+
+    const responseData = {
+      symbol,
+      expiry,
+      exchange,
+      spotPrice: spotPrice > 0 ? spotPrice : Number(prev?.spotPrice ?? 0),
+      atmStrike: atmStrike > 0 ? atmStrike : Number(prev?.atmStrike ?? 0),
+      expiries,
+      chain: mergedChain,
+    };
     quoteCache.set(cacheKey, { data: responseData, fetchedAt: Date.now() });
     return NextResponse.json(responseData);
   } catch (err: any) {

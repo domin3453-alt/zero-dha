@@ -162,16 +162,16 @@ export async function POST(request: Request) {
         const sell = Number(o.sellPrice ?? 0);
         const ltp = Number(o.ltp ?? 0);
         const avg = Number(o.avgPrice ?? 0);
-        const buyAt = o.buyAt != null && o.buyAt !== "" ? Number(o.buyAt) : undefined;
-        const sellAt = o.sellAt != null && o.sellAt !== "" ? Number(o.sellAt) : undefined;
+        const buyAtNum = o.buyAt == null ? NaN : Number(o.buyAt);
+        const sellAtNum = o.sellAt == null ? NaN : Number(o.sellAt);
         return {
           ...o,
           buyPrice: buy,
           sellPrice: sell,
           avgPrice: avg,
           ltp,
-          buyAt: buyAt != null && Number.isFinite(buyAt) ? buyAt : undefined,
-          sellAt: sellAt != null && Number.isFinite(sellAt) ? sellAt : undefined,
+          buyAt: Number.isFinite(buyAtNum) ? buyAtNum : undefined,
+          sellAt: Number.isFinite(sellAtNum) ? sellAtNum : undefined,
           strikePrice: Number(o.strikePrice) > 0 ? Number(o.strikePrice) : o.strikePrice,
         };
       },
