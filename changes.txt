@@ -1,0 +1,13 @@
+Login and Register Screen -> Text styling change 
+
+Home screen -> add apple (global market) and cryptocurrency market
+
+Home screen -> Top card shifted to  Funds
+
+Orders screen -> chips or capsule for different aspects , and a bootm fixed sheet showing total gains in frontend itself.
+
+UI UX polis
+
+Top pfp with account or user photo , as well as drop down with settings as well as profile , which would lead to specific interfaces.
+
+Settings Screen ->
