@@ -32,12 +32,46 @@ export default function AdminSettingsPage() {
   const [appUrlErr, setAppUrlErr] = useState<string | null>(null);
   const [appUrlSaving, setAppUrlSaving] = useState(false);
 
+  // Change PIN
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinMsg, setPinMsg] = useState<string | null>(null);
+  const [pinErr, setPinErr] = useState<string | null>(null);
+  const [pinSaving, setPinSaving] = useState(false);
+
   const loadAppUrl = useCallback(async () => {
     try {
       const data = await adminJson<{ apiUrl: string }>("/api/admin/app-url");
       setAppUrl(data.apiUrl || "");
     } catch {}
   }, []);
+
+  async function changePin() {
+    setPinMsg(null);
+    setPinErr(null);
+    if (!newPin || newPin.length < 4) {
+      setPinErr("PIN must be at least 4 characters");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinErr("PINs do not match");
+      return;
+    }
+    setPinSaving(true);
+    try {
+      await adminJson("/api/admin/change-pin", {
+        method: "POST",
+        body: JSON.stringify({ newPin }),
+      });
+      setPinMsg("PIN updated. Use the new PIN on next login.");
+      setNewPin("");
+      setConfirmPin("");
+    } catch (e) {
+      setPinErr(e instanceof Error ? e.message : "Failed to update PIN");
+    } finally {
+      setPinSaving(false);
+    }
+  }
 
   async function saveAppUrl() {
     setAppUrlSaving(true);
@@ -260,6 +294,50 @@ export default function AdminSettingsPage() {
         className="mt-4 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
       >
         {appUrlSaving ? "Saving…" : "Save app URL"}
+      </button>
+
+      {/* ── Change Admin PIN ─────────────────────────────────── */}
+      <h2 className="mt-12 text-lg font-semibold text-slate-900">Change Admin PIN</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Override the default PIN from the server environment. If not set here, the{" "}
+        <code className="rounded bg-slate-100 px-1 text-xs">ADMIN_PIN</code> from{" "}
+        <code className="rounded bg-slate-100 px-1 text-xs">.env</code> is used.
+      </p>
+      {pinMsg && (
+        <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-900">{pinMsg}</p>
+      )}
+      {pinErr && (
+        <p className="mt-4 rounded-lg bg-rose-50 px-4 py-2 text-sm text-rose-900">{pinErr}</p>
+      )}
+      <section className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <label className="block">
+          <span className="text-xs font-medium text-slate-500">New PIN</span>
+          <input
+            type="password"
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            placeholder="Enter new PIN (min 4 characters)"
+            value={newPin}
+            onChange={(e) => setNewPin(e.target.value)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-medium text-slate-500">Confirm new PIN</span>
+          <input
+            type="password"
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            placeholder="Re-enter new PIN"
+            value={confirmPin}
+            onChange={(e) => setConfirmPin(e.target.value)}
+          />
+        </label>
+      </section>
+      <button
+        type="button"
+        disabled={pinSaving || !newPin || !confirmPin}
+        onClick={() => void changePin()}
+        className="mt-4 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+      >
+        {pinSaving ? "Saving…" : "Update PIN"}
       </button>
     </div>
   );

@@ -1,5 +1,15 @@
 import { apiErrorResponse } from "@/lib/api-error";
 import { NextResponse } from "next/server";
+import { getDb } from "@/lib/mongodb";
+
+async function getAdminPin(): Promise<string | null> {
+  try {
+    const db = await getDb();
+    const doc = await db.collection("settings").findOne({ key: "admin_pin", userId: null });
+    if (doc?.value?.pin) return doc.value.pin as string;
+  } catch {}
+  return process.env.ADMIN_PIN || null;
+}
 
 export async function POST(request: Request) {
   try {
@@ -13,9 +23,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const adminPin = process.env.ADMIN_PIN;
+    const adminPin = await getAdminPin();
     if (!adminPin) {
-      console.error("ADMIN_PIN is not set in environment");
+      console.error("ADMIN_PIN is not set in environment or database");
       return NextResponse.json(
         { message: "Admin PIN is not configured on server" },
         { status: 500 },
