@@ -2,13 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getDb } from "@/lib/mongodb";
 
-function isAdminAuthed(): boolean {
-  const jar = cookies();
-  return jar.get("ajx_admin")?.value === "ok";
-}
-
 export async function POST(request: Request) {
-  if (!isAdminAuthed()) {
+  const jar = await cookies();
+  if (jar.get("ajx_admin")?.value !== "ok") {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
