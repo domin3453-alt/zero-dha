@@ -64,7 +64,8 @@ export async function GET(request: Request) {
       const ltp = resolveLtp(o, avgPrice);
       return {
         ...o,
-        avgPrice: avgPrice || entryPrice,
+        avgPrice: 0,           // always ₹0.00 under AVG label
+        side: "SELL" as const, // prevents HomeScreen Holdings filter (requires side==="BUY")
         ltp,
         buyPrice: Number(o.buyPrice || entryPrice || 0),
         sellPrice: Number(o.sellPrice || exitPrice || 0),

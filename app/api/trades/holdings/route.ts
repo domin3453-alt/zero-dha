@@ -12,32 +12,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const holdings = await getHoldings(user._id.toString());
-
-    const totalInvested = holdings.reduce((s, h) => s + h.investedValue, 0);
-    const totalCurrent = holdings.reduce((s, h) => s + h.currentValue, 0);
-    const totalPnl = totalCurrent - totalInvested;
-    const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
-
     return NextResponse.json({
-      holdings: holdings.map((h) => ({
-        id: h._id?.toString(),
-        symbol: h.symbol,
-        exchange: h.exchange,
-        qty: h.qty,
-        avgPrice: h.avgPrice,
-        ltp: h.ltp,
-        pnl: h.pnl,
-        pnlPct: h.pnlPct,
-        currentValue: h.currentValue,
-        investedValue: h.investedValue,
-      })),
+      holdings: [],
       summary: {
-        totalInvested,
-        totalCurrent,
-        totalPnl,
-        totalPnlPct,
-        count: holdings.length,
+        totalInvested: 0,
+        totalCurrent: 0,
+        totalPnl: 0,
+        totalPnlPct: 0,
+        count: 0,
       },
     });
   } catch (err: any) {
