@@ -493,6 +493,22 @@ export default function AdminOrdersPage() {
             Add order
           </button>
         </div>
+
+        {/* Legend: how BUY/SELL and CE/PE appear in the app */}
+        <div className="mb-3 flex flex-wrap gap-3 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+          <span className="font-semibold text-slate-700">App display legend:</span>
+          <span className="flex items-center gap-1">
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-700">BUY</span>
+            <span className="rounded bg-rose-100 px-1.5 py-0.5 font-bold text-rose-700">SELL</span>
+            shown as green/red pills (Side column)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-bold text-emerald-700">CE</span>
+            <span className="rounded bg-rose-100 px-1.5 py-0.5 font-bold text-rose-700">PE</span>
+            shown as green/red pills (Opt column)
+          </span>
+          <span>Toggle <strong>Opt?</strong> / <strong>Side?</strong> / <strong>Str?</strong> to control what the user sees.</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left text-[11px]">
             <thead>
@@ -565,16 +581,21 @@ export default function AdminOrdersPage() {
                       />
                     </td>
                     <td className="px-1.5 py-1 align-top">
-                      <select
-                        className={inp}
-                        value={row.side}
-                        onChange={(e) =>
-                          updateRow(idx, { side: e.target.value as OrderRow["side"] })
-                        }
-                      >
-                        <option value="BUY">BUY</option>
-                        <option value="SELL">SELL</option>
-                      </select>
+                      <div className="flex flex-col gap-1">
+                        <select
+                          className={inp}
+                          value={row.side}
+                          onChange={(e) =>
+                            updateRow(idx, { side: e.target.value as OrderRow["side"] })
+                          }
+                        >
+                          <option value="BUY">BUY</option>
+                          <option value="SELL">SELL</option>
+                        </select>
+                        <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold tracking-wide ${row.side === "BUY" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                          {row.side}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-1.5 py-1 align-top">
                       <select
@@ -598,15 +619,22 @@ export default function AdminOrdersPage() {
                       />
                     </td>
                     <td className="px-1.5 py-1 align-top">
-                      <select
-                        className={inp}
-                        value={row.optionType || ""}
-                        onChange={(e) => updateRow(idx, { optionType: e.target.value })}
-                      >
-                        <option value="">— Equity</option>
-                        <option value="CE">CE</option>
-                        <option value="PE">PE</option>
-                      </select>
+                      <div className="flex flex-col gap-1">
+                        <select
+                          className={inp}
+                          value={row.optionType || ""}
+                          onChange={(e) => updateRow(idx, { optionType: e.target.value })}
+                        >
+                          <option value="">— Equity</option>
+                          <option value="CE">CE</option>
+                          <option value="PE">PE</option>
+                        </select>
+                        {row.optionType ? (
+                          <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold tracking-wide ${row.optionType === "CE" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                            {row.optionType}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-1.5 py-1 align-top">
                       <input
