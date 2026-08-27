@@ -4,6 +4,11 @@ import { ObjectId } from "mongodb";
 import { getUserFromRequest } from "@/lib/auth";
 import { getDb } from "@/lib/mongodb";
 
+/** Health-check — open this URL in a browser to confirm the route is live. */
+export async function GET() {
+  return NextResponse.json({ ok: true, route: "/api/auth/credentials", method: "PATCH to change clientId or password" });
+}
+
 export async function PATCH(request: Request) {
   try {
     const user = await getUserFromRequest(request);
