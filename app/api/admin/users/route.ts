@@ -3,6 +3,7 @@ import { getDb } from "@/lib/mongodb";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
+import type { NextRequest } from "next/server";
 
 export async function GET() {
   try {
@@ -132,6 +133,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "User updated" });
   } catch (error) {
     return apiErrorResponse(error, "Admin users update error:", "Failed to update user");
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const adminCookie = cookieStore.get("ajx_admin");
+    if (!adminCookie || adminCookie.value !== "ok") {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = request.nextUrl.searchParams.get("userId");
+    if (!userId) {
+      return NextResponse.json({ message: "userId is required" }, { status: 400 });
+    }
+
+    const oid = new ObjectId(userId);
+    const db = await getDb();
+
+    await Promise.all([
+      db.collection("users").deleteOne({ _id: oid }),
+      db.collection("trades").deleteMany({ userId: oid }),
+      db.collection("fund_requests").deleteMany({ userId: oid }),
+      db.collection("settings").deleteMany({ userId: oid }),
+    ]);
+
+    return NextResponse.json({ message: "User and all associated data deleted." });
+  } catch (error) {
+    return apiErrorResponse(error, "Admin delete user error:", "Failed to delete user");
   }
 }
 
