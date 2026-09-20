@@ -33,6 +33,7 @@ export default function AdminUsersPage() {
   const [newClientId, setNewClientId] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -190,6 +191,22 @@ export default function AdminUsersPage() {
       setErr(e instanceof Error ? e.message : "Failed to update email");
     } finally {
       setSavingEmail((p) => ({ ...p, [userId]: false }));
+    }
+  }
+
+  async function deleteUser(userId: string, name: string) {
+    if (!window.confirm(`Permanently delete "${name || "this user"}" and all their data? This cannot be undone.`)) return;
+    setMsg(null);
+    setErr(null);
+    setDeleting((p) => ({ ...p, [userId]: true }));
+    try {
+      await adminJson(`/api/admin/users?userId=${userId}`, { method: "DELETE" });
+      setMsg(`User "${name || userId}" deleted.`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeleting((p) => ({ ...p, [userId]: false }));
     }
   }
 
@@ -419,6 +436,14 @@ export default function AdminUsersPage() {
                               onClick={() => void resendCredentials(u._id)}
                             >
                               {resending[u._id] ? "Sending…" : "Resend Mail"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={!!deleting[u._id]}
+                              className="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                              onClick={() => void deleteUser(u._id, u.fullName || "")}
+                            >
+                              {deleting[u._id] ? "Deleting…" : "Delete"}
                             </button>
                           </div>
                         </div>
